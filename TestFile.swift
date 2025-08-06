@@ -1,34 +1,40 @@
 import Foundation
 
-func encryptCode(_ secretCode: Int, _ firstKey: Int, _ secondKey: Int) {
-    let MOD = 1000000007
+func minGasStations(_ num: Int, _ distancesStr: String, _ numS: Int, _ gasAmountsStr: String, _ totalDistance: Int, _ initialGas: Int) -> Int {
+    let distances = distancesStr.split(separator: " ").map { Int($0)! }
+    let gasAmounts = gasAmountsStr.split(separator: " ").map { Int($0)! }
+    let stations = zip(distances, gasAmounts).sorted { $0.0 < $1.0 }
     
-    // Calculate S^N % 10 using modular exponentiation
-    func modPow(_ base: Int, _ exp: Int, _ mod: Int) -> Int {
-        if exp == 0 { return 1 }
-        var result = 1
-        var b = base % mod
-        var e = exp
+    var position = 0
+    var currentGas = initialGas
+    var count = 0
+    var i = 0
+    
+    while position < totalDistance {
+        if position + currentGas >= totalDistance { return count }
         
-        while e > 0 {
-            if e % 2 == 1 {
-                result = (result * b) % mod
+        var best = -1
+        var maxGas = 0
+        
+        while i < stations.count && stations[i].0 <= position + currentGas {
+            if stations[i].1 > maxGas {
+                maxGas = stations[i].1
+                best = i
             }
-            b = (b * b) % mod
-            e /= 2
+            i += 1
         }
-        return result
+        
+        if best == -1 { return -1 }
+        
+        currentGas -= stations[best].0 - position
+        position = stations[best].0
+        currentGas += stations[best].1
+        count += 1
+        i = best + 1
     }
     
-    // First step: S^N % 10
-    let base = modPow(secretCode, firstKey, 10)
-    
-    // Second step: (base^M) % 1000000007
-    let result = modPow(base, secondKey, MOD)
-    
-    print(result)
+    return count
 }
 
-// Test with the example
-encryptCode(2, 3, 4)
-encryptCode(3, 1000000007, 4)
+// Test
+print(minGasStations(4, "5 7 8 10", 4, "2 3 1 5", 15, 5))
