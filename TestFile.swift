@@ -5,48 +5,62 @@ func findShortestPathWithMagic() {
     let startCity = Int(readLine()!)!
     let targetCity = Int(readLine()!)!
     let magicSpellCount = Int(readLine()!)!
-    let totalRoads = Int(readLine()!.split(separator: " ")[0])!
+    let roadInfo = readLine()!.split(separator: " ").map { Int($0)! }
+    let totalRoads = roadInfo[0]
     
     var cityGraph = Array(repeating: [(Int, Int)](), count: totalCities)
     
     for _ in 0..<totalRoads {
         let roadData = readLine()!.split(separator: " ").map { Int($0)! }
-        cityGraph[roadData[0]].append((roadData[1], roadData[2]))
-        cityGraph[roadData[1]].append((roadData[0], roadData[2]))
+        let cityFrom = roadData[0]
+        let cityTo = roadData[1]
+        let roadDistance = roadData[2]
+        
+        cityGraph[cityFrom].append((cityTo, roadDistance))
+        cityGraph[cityTo].append((cityFrom, roadDistance))
     }
     
-    var distanceMatrix = Array(repeating: Array(repeating: Int.max, count: magicSpellCount + 1), count: totalCities)
-    distanceMatrix[startCity][0] = 0
+    var minDistanceTable = Array(repeating: Array(repeating: Int.max, count: magicSpellCount + 1), count: totalCities)
+    var visitedStates = Array(repeating: Array(repeating: false, count: magicSpellCount + 1), count: totalCities)
+    
+    minDistanceTable[startCity][0] = 0
     
     for _ in 0..<totalCities * (magicSpellCount + 1) {
+        var currentMinDistance = Int.max
         var selectedCity = -1
-        var selectedSpells = -1
-        var minDistance = Int.max
+        var selectedSpellsUsed = -1
         
-        for city in 0..<totalCities {
-            for spells in 0...magicSpellCount {
-                if distanceMatrix[city][spells] < minDistance {
-                    minDistance = distanceMatrix[city][spells]
-                    selectedCity = city
-                    selectedSpells = spells
+        for cityIndex in 0..<totalCities {
+            for spellsUsed in 0...magicSpellCount {
+                if !visitedStates[cityIndex][spellsUsed] && minDistanceTable[cityIndex][spellsUsed] < currentMinDistance {
+                    currentMinDistance = minDistanceTable[cityIndex][spellsUsed]
+                    selectedCity = cityIndex
+                    selectedSpellsUsed = spellsUsed
                 }
             }
         }
         
-        guard selectedCity != -1 else { break }
+        if selectedCity == -1 { break }
         
-        distanceMatrix[selectedCity][selectedSpells] = Int.max
+        visitedStates[selectedCity][selectedSpellsUsed] = true
         
         for (neighborCity, edgeWeight) in cityGraph[selectedCity] {
-            distanceMatrix[neighborCity][selectedSpells] = min(distanceMatrix[neighborCity][selectedSpells], minDistance + edgeWeight)
+            // Normal traversal
+            if minDistanceTable[selectedCity][selectedSpellsUsed] + edgeWeight < minDistanceTable[neighborCity][selectedSpellsUsed] {
+                minDistanceTable[neighborCity][selectedSpellsUsed] = minDistanceTable[selectedCity][selectedSpellsUsed] + edgeWeight
+            }
             
-            if selectedSpells < magicSpellCount {
-                distanceMatrix[neighborCity][selectedSpells + 1] = min(distanceMatrix[neighborCity][selectedSpells + 1], minDistance)
+            // Magic spell traversal
+            if selectedSpellsUsed < magicSpellCount && minDistanceTable[selectedCity][selectedSpellsUsed] < minDistanceTable[neighborCity][selectedSpellsUsed + 1] {
+                minDistanceTable[neighborCity][selectedSpellsUsed + 1] = minDistanceTable[selectedCity][selectedSpellsUsed]
             }
         }
     }
     
-    print(distanceMatrix[targetCity].min() == Int.max ? -1 : distanceMatrix[targetCity].min()!)
+    var finalResult = Int.max
+    for spellsUsed in 0...magicSpellCount {
+        finalResult = min(finalResult, minDistanceTable[targetCity][spellsUsed])
+    }
+    
+    print(finalResult == Int.max ? -1 : finalResult)
 }
-
-findShortestPathWithMagic()
